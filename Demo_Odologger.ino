@@ -1,3 +1,4 @@
+
 //Codigo Demo para la manufactura de Odologger
 //v0.5
 
@@ -34,8 +35,11 @@ const int OK_LED = 6;
 //GPS Definitions and Vars###################################################
 static const int RXPin = 62, TXPin = 63;
 static const uint32_t GPSBaud = 9600;
+
 // The TinyGPS++ object
 TinyGPSPlus gps;
+
+boolean firstTime=1;
 // The serial connection to the GPS device
 SoftwareSerial ss(RXPin, TXPin);
 
@@ -73,6 +77,37 @@ static uint32_t message_count = 0;
 
 
 void check_radio(void);
+
+//RFID COnfig##########################################################################
+
+
+
+    byte dataBlock[]    = {
+        0x00, 0x00, 0x00, 0x00, //  0, 0, 0, 0,
+        0x00, 0x00, 0x00, 0x00, //  0, 0, 0, 0,
+        0x00, 0x00, 0x00, 0x00, //  0, 0, 0, 0,
+        0x00, 0x00, 0x00, 0x00  //  0, 0, 0, 0
+    };
+int succesCounter=0;
+boolean flagClearSector;
+byte sector;
+byte trailerBlock;
+int BlockNumber;
+int SectorToClear;
+int cardIsonPosition= 1;
+char data_to_write[16];
+String strCmd = "";
+
+//byte buffer[34];  
+//byte status, len;
+byte blockAddr;
+//byte size = sizeof(buffer);
+int i;
+boolean flagGps=1;
+boolean flagGpsAlive=0;
+MFRC522::MIFARE_Key key;
+//###########################################################################################
+
 
 void setup() {
 
@@ -139,37 +174,51 @@ void setup() {
  //###################################################################################
 
 
+
+
 tc_01_LedsBasicTest();
 tc_02_SDcardConnectTest();
+tc_03_rfIDbasicTest();
+//tc_04_GPSbasicTest();
 
 }
 
-void loop() {
-
-
-
+void loop() 
+{
+  
+ /*if(flagGps)
+ { Serial.println("flag");
+   for(i=0;i<10;i++)
+   {*/
+   tc_04_GPSbasicTest();
+   /*Serial.println("GPS");
+   }
+ */
 }
 
 
 int tc_01_LedsBasicTest()
 {
-  Serial.println("-----TEST 1: FUNCIONAMIENTO BÁSICO DE LEDS------");
+  Serial.println("-----TEST 1: FUNCIONAMIENTO BASICO DE LEDS------");
   Serial.println("");
   Serial.println("LED AZUL de POWER encendido? s/n");
-  delay(3000);
-  Serial.println("Ahora encenderan los leds Rojo y Azul...");
-  delay(5000);
+  delay(2000);
+  Serial.println("Ahora encenderan los leds Rojo y Verde...");
+  delay(2000);
   digitalWrite(NOK_LED,LOW);
   digitalWrite(OK_LED,LOW);
   Serial.println("LED ROJO y VERDE encendidos? s/n");
-  delay(5000);
+  delay(2000);
   Serial.println("Fin de la prueba de LEDs");
-  
+
 }
 
 int tc_02_SDcardConnectTest()
 {
-  Serial.println("-----TEST 2: FUNCIONAMIENTO BÁSICO DE SD-----");
+  Serial.println("");
+  Serial.println("");
+  Serial.println("-----TEST 2: FUNCIONAMIENTO BASICO DE SD-----");
+    Serial.println("");
   // see if the card is present and can be initialized:
   if (!SD.begin(chipSelect)) {
     Serial.println("Falla en comunicacion, asegurate que la uSD esté insertada e intenta de nuevo");
@@ -182,8 +231,95 @@ int tc_02_SDcardConnectTest()
       Serial.println("PASS");
       return 1;
     }
+
+}
+
+int tc_03_rfIDbasicTest()
+{
+  Serial.println("");
+  Serial.println("");
+  Serial.println("-----TEST 3: FUNCIONAMIENTO BASICO DE RFid-----");
+  Serial.println("");
+  mfrc522.PCD_Init();                             // Init MFRC522 chip again per each write attemp  
+  mfrc522.PCD_DumpVersionToSerial();              // Show details of PCD - MFRC522 Card Reader details
+   
+    // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent()) {
+    Serial.println("Targeta fuera de alcance");
+    
+  }
+  else
+  {
+    Serial.println("Targeta dentro de alcance");
+  }
+
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("Falla en lectura de tarjeta");
+    
+  }
+  else
+  {
+    Serial.println("RFid OK :) !");
+    Serial.println("PASS");
+  }
+
+  
+   
+}
+
+
+int tc_04_GPSbasicTest()
+{
+/*
+  Serial.println("");
+  Serial.println("");
+  Serial.println("-----TEST 4: FUNCIONAMIENTO BASICO DE GPS-----");
+  Serial.println("");
+  */
+
+
+   while (ss.available())
+{
+ int c = ss.read();
+ gps.encode(c);
+}
+  if (gps.location.isUpdated())
+  {
+      gps.location.lat();
+      gps.location.lng();
+    
+  }
+
+else if (gps.satellites.isUpdated())
+  {
+    Serial.println(F("Sats Available="));
+    Serial.println(gps.satellites.value());
+       digitalWrite(NOK_LED,flagGpsAlive);
+        digitalWrite(OK_LED,flagGpsAlive);
+        flagGpsAlive=!flagGpsAlive;
+  }
+
+
+ 
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -237,5 +373,10 @@ void check_radio(void)
     
   }
 }
+
+
+
+
+
 
 
