@@ -13,10 +13,11 @@
 #include <SD.h>
 #include "Timer.h"
 #include<stdlib.h>
+#include "printf.h"
 //#################################################################
 
 //SW Version########################################################
-String SWver = "SW ver: 2.4 Date: 21/01/16";
+String SWver = "SW ver: 2.5 Date: 28/01/16";
 String diagCmd = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
@@ -64,7 +65,7 @@ RF24 radio(5,4);
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 // The various roles supported by this sketch
-typedef enum { role_ping_out = 1, role_pong_back } role_e;
+typedef enum { role_sender = 1, role_receiver } role_e;
 
 // The debug-friendly names of those roles
 const char* role_friendly_name[] = { "invalid", "Ping out", "Pong back"};
@@ -76,7 +77,7 @@ static uint32_t message_count = 0;
 //char SendPayload[31] = "#ERROR|ERROR|K00000|V00|D01#";
 
 
-void check_radio(void);
+
 
 //RFID COnfig##########################################################################
 
@@ -129,9 +130,9 @@ void setup() {
  //CFG RF module######################################################################
 
   //Choose Tx, Odologger will Tx to the station
-  role = role_ping_out;
+  role = role_receiver;
   radio.begin();
-  
+  printf_begin();
   //Setting Data rate to 2Mbps
   radio.setDataRate(RF24_2MBPS);
   
@@ -149,9 +150,9 @@ void setup() {
 
      radio.startListening();
   // Dump the configuration of the rf unit for debugging
-  radio.printDetails();
 
-   attachInterrupt(4, check_radio, FALLING);
+
+   //attachInterrupt(4, check_radio, FALLING);
  //###################################################################################
 
 
@@ -179,7 +180,12 @@ void setup() {
 tc_01_LedsBasicTest();
 tc_02_SDcardConnectTest();
 tc_03_rfIDbasicTest();
-//tc_04_GPSbasicTest();
+tc_04_RFTest();
+
+  Serial.println("");
+  Serial.println("");
+  Serial.println("-----TEST 5: FUNCIONAMIENTO BASICO DE GPS-----");
+  Serial.println("");
 
 }
 
@@ -190,7 +196,7 @@ void loop()
  { Serial.println("flag");
    for(i=0;i<10;i++)
    {*/
-   tc_04_GPSbasicTest();
+   tc_05_GPSbasicTest();
    /*Serial.println("GPS");
    }
  */
@@ -201,13 +207,13 @@ int tc_01_LedsBasicTest()
 {
   Serial.println("-----TEST 1: FUNCIONAMIENTO BASICO DE LEDS------");
   Serial.println("");
-  Serial.println("LED AZUL de POWER encendido? s/n");
+  Serial.println("LED AZUL de POWER encendido? ");
   delay(2000);
   Serial.println("Ahora encenderan los leds Rojo y Verde...");
   delay(2000);
   digitalWrite(NOK_LED,LOW);
   digitalWrite(OK_LED,LOW);
-  Serial.println("LED ROJO y VERDE encendidos? s/n");
+  Serial.println("LED ROJO y VERDE encendidos? ");
   delay(2000);
   Serial.println("Fin de la prueba de LEDs");
 
@@ -269,14 +275,25 @@ int tc_03_rfIDbasicTest()
 }
 
 
-int tc_04_GPSbasicTest()
+int tc_04_RFTest()
 {
-/*
   Serial.println("");
   Serial.println("");
-  Serial.println("-----TEST 4: FUNCIONAMIENTO BASICO DE GPS-----");
+  Serial.println("-----TEST 4: FUNCIONAMIENTO BASICO DE RF-----");
   Serial.println("");
-  */
+  radio.printDetails();
+  
+}
+
+
+int tc_05_GPSbasicTest()
+{
+
+ /* Serial.println("");
+  Serial.println("");
+  Serial.println("-----TEST 5: FUNCIONAMIENTO BASICO DE GPS-----");
+  Serial.println("");*/
+  
 
 
    while (ss.available())
@@ -293,7 +310,7 @@ int tc_04_GPSbasicTest()
 
 else if (gps.satellites.isUpdated())
   {
-    Serial.println(F("Sats Available="));
+    Serial.println(F("GPS Alive, Sats Available="));
     Serial.println(gps.satellites.value());
        digitalWrite(NOK_LED,flagGpsAlive);
         digitalWrite(OK_LED,flagGpsAlive);
@@ -304,79 +321,4 @@ else if (gps.satellites.isUpdated())
  
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void check_radio(void)
-{
-  //Serial.println("IRQ");
-  // What happened?
-  bool tx,fail,rx;
-  
-  radio.whatHappened(tx,fail,rx);
-
-  rfDataflag = 1;
-  // Have we successfully transmitted?
-  if ( tx )
-  {
-   
-
-  }
-    else
-    {
-    //  Serial.println("Cards not available");
-     /* digitalWrite(NOK_LED,LOW);
-      delay(500);
-      digitalWrite( NOK_LED,HIGH);*/
-    //  rfReturnVal = -1;   //We transmited Data but somethig is wrong with tags
-    //}
-      
-  }
-
-  // Have we failed to transmit?
-  if ( fail )
-  {
-       /*digitalWrite(NOK_LED,LOW);
-       delay(500);
-       digitalWrite( NOK_LED,HIGH);
-       Serial.println("Send:Failed\n\r");*/
-     //  rfReturnVal = 0;   //Definetly we failed transmission of DATA 
-  }
-
-
-
-  // Did we receive a message?
-  if ( rx )
-  {
-   
-      radio.read(&message_count,sizeof(message_count));
-      Serial.print("ACK: ");
-      Serial.println(message_count);
-    
-
-    
-  }
-}
-
-
-
-
-
-
 
